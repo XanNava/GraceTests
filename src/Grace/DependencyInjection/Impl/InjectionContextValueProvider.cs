@@ -6,7 +6,9 @@ using Grace.Utilities;
 
 namespace Grace.DependencyInjection.Impl
 {
-    /// <summary>
+	using System.Text;
+
+	/// <summary>
     /// Interface for getting data from extra data 
     /// </summary>
     public interface IInjectionContextValueProvider
@@ -129,6 +131,8 @@ namespace Grace.DependencyInjection.Impl
             return value;
         }
 
+        public static StringBuilder Logs = new StringBuilder();
+
         /// <summary>
         /// Get data from injection context
         /// </summary>
@@ -147,27 +151,47 @@ namespace Grace.DependencyInjection.Impl
                                                  IInjectionContext dataProvider, 
                                                  object defaultValue, 
                                                  bool useDefault, 
-                                                 bool isRequired)
-        {
-            object value = null;
+                                                 bool isRequired) {
+	        Logs.AppendLine("-----GetValueFromInjectionContext-----");
+	        Logs.AppendLine(locator.ToString());
+	        Logs.AppendLine("staticContext null:" + (staticContext != null).ToString());
+			Logs.AppendLine("key val:" + (string)key);
+			Logs.AppendLine("dataProvider null:" + (dataProvider != null).ToString());
+			Logs.AppendLine("defaultValue null:" + (defaultValue != null).ToString());
+			Logs.AppendLine("useDefault val:" + useDefault.ToString());
+			Logs.AppendLine("isRequired val:" + isRequired.ToString());
 
-            if (dataProvider != null)
-            {
-                GetValueFromExtraDataProvider<T>(key, dataProvider, out value);
+			key = (object)"ServiceA";
+			Logs.AppendLine("key val:" + (string)key);
+
+			object value = null;
+
+			Logs.AppendLine((dataProvider != null).ToString());
+
+			if (dataProvider != null) {
+				Logs.AppendLine("a1 stake sauce");
+
+				GetValueFromExtraDataProvider<T>(key, dataProvider, out value);
+				Logs.AppendLine("Value type: " + value?.GetType().ToString());
+				Logs.AppendLine("value val: " + (value != null));
 
                 if (value == null)
                 {
-                    if (dataProvider.ExtraData is T)
+					Logs.AppendLine("a2");
+					if (dataProvider.ExtraData is T)
                     {
-                        value = dataProvider.ExtraData;
+						Logs.AppendLine("a3");
+						value = dataProvider.ExtraData;
                     }
                     else
                     {
-                        var delegateInstance = dataProvider.ExtraData as Delegate;
-
+						Logs.AppendLine("a4");
+						var delegateInstance = dataProvider.ExtraData as Delegate;
+						
                         if (delegateInstance != null && delegateInstance.GetMethodInfo().ReturnType == typeof(T))
                         {
-                            value = delegateInstance;
+							Logs.AppendLine("a5");
+							value = delegateInstance;
                         }
                     }
                 }
@@ -175,13 +199,16 @@ namespace Grace.DependencyInjection.Impl
 
             if (value == null)
             {
-                var currentLocator = locator;
+				Logs.AppendLine("b1");
+				var currentLocator = locator;
 
                 while (currentLocator != null)
                 {
-                    if (GetValueFromExtraDataProvider<T>(key, currentLocator, out value))
+					Logs.AppendLine("b2");
+					if (GetValueFromExtraDataProvider<T>(key, currentLocator, out value))
                     {
-                        break;
+						Logs.AppendLine("b3");
+						break;
                     }
 
                     currentLocator = currentLocator.Parent;
@@ -190,53 +217,77 @@ namespace Grace.DependencyInjection.Impl
 
             if (value == null && useDefault)
             {
-                value = defaultValue;
+				Logs.AppendLine("c1");
+				value = defaultValue;
             }
 
+            Logs.AppendLine(value?.ToString());
             if (value != null)
             {
-                if (value is Delegate)
+				Logs.AppendLine("d1");
+
+				if (value is Delegate)
                 {
-                    value =
+					Logs.AppendLine("d2");
+
+					value =
                         ReflectionService.InjectAndExecuteDelegate(locator, staticContext, dataProvider, value as Delegate);
                 }
 
                 if(!(value is T))
                 {
-                    try
-                    {
+					Logs.AppendLine("d3");
+
+					try {
                         if (typeof(T).IsConstructedGenericType &&
                             typeof(T).GetTypeInfo().GetGenericTypeDefinition() == typeof(Nullable<>))
                         {
-                            var type = typeof(T).GetTypeInfo().GenericTypeArguments[0];
+							Logs.AppendLine("d4");
+
+							var type = typeof(T).GetTypeInfo().GenericTypeArguments[0];
 
                             if (type.GetTypeInfo().IsEnum)
                             {
-                                value = Enum.ToObject(type, value);
+								Logs.AppendLine("d5");
+
+								value = Enum.ToObject(type, value);
                             }
                             else
                             {
-                                value = Convert.ChangeType(value, typeof(T).GetTypeInfo().GenericTypeArguments[0]);
+								Logs.AppendLine("d6");
+
+								value = Convert.ChangeType(value, typeof(T).GetTypeInfo().GenericTypeArguments[0]);
                             }
                         }
                         else
                         {
-                            value = Convert.ChangeType(value, typeof(T));
+							Logs.AppendLine("d7");
+
+							value = Convert.ChangeType(value, typeof(T));
                         }
                     }
                     catch (Exception exp)
                     {
-                        // to do fix up exception
-                        throw new LocateException(staticContext, exp);
+						Logs.AppendLine("d8!");
+
+						// to do fix up exception
+						throw new LocateException(staticContext, exp);
                     }
                 }
             }
-            else if (isRequired && !useDefault)
-            {
-                throw new LocateException(staticContext);
-            }
+            else if (isRequired && !useDefault) {
+				Logs.AppendLine("d9");
 
-            return (T)value;
+				Logs.AppendLine(isRequired.ToString());
+	            Logs.AppendLine((!useDefault).ToString());
+				Logs.AppendLine("-----END-----");
+
+// !!-- Issue.
+				throw new LocateException(staticContext);
+            }
+            Logs.AppendLine("-----END-----");
+
+		return (T)value;
         }
 
         /// <summary>
@@ -247,32 +298,46 @@ namespace Grace.DependencyInjection.Impl
         /// <param name="dataProvider"></param>
         /// <param name="tValue"></param>
         /// <returns></returns>
-        protected virtual bool GetValueFromExtraDataProvider<T>(object key, IExtraDataContainer dataProvider, out object tValue)
-        {
+        protected virtual bool GetValueFromExtraDataProvider<T>(object key, IExtraDataContainer dataProvider, out object tValue) {
+	        Logs.AppendLine("-----GetValueFromExtraDataProvider-----");
+	        Logs.AppendLine("Key null: " + (key != null).ToString());
             object value = null;
 
             if (key != null)
             {
                 value = dataProvider.GetExtraData(key);
+                Logs.Append(InjectionContext.Logs);
+				Logs.AppendLine("WHAT");
+
+Logs.AppendLine("dataProvider source = " + dataProvider.GetType().ToString());
+                Logs.AppendLine("A1 value = " + value?.GetType().ToString());
             }
 
-            if (value != null)
-            {
+            if (value != null) {
+	            Logs.AppendLine("B1 value != null");
                 tValue = value;
                 return true;
             }
 
             foreach (var o in dataProvider.KeyValuePairs)
             {
-                if (o.Key is string stringKey && 
+				Logs.AppendLine("C1");
+
+				if (o.Key is string stringKey && 
                     stringKey.StartsWith(UniqueStringId.Prefix))
                 {
-                    continue;
+					Logs.AppendLine("C2");
+
+
+					continue;
                 }
 
                 if (o.Value is T)
                 {
-                    tValue = o.Value;
+					Logs.AppendLine("C3");
+
+
+					tValue = o.Value;
 
                     return true;
                 }
@@ -280,13 +345,19 @@ namespace Grace.DependencyInjection.Impl
                 if (o.Value is Delegate delegateInstance && 
                     delegateInstance.GetMethodInfo().ReturnType == typeof(T))
                 {
-                    tValue = o.Value;
+					Logs.AppendLine("C4");
+
+					tValue = o.Value;
 
                     return true;
                 }
             }
 
-            tValue = null;
+			Logs.AppendLine("Z1");
+
+			Logs.AppendLine("-----END-----");
+
+			tValue = null;
 
             return false;
         }

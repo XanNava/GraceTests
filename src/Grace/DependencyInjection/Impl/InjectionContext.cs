@@ -7,7 +7,9 @@ using Grace.Data.Immutable;
 
 namespace Grace.DependencyInjection.Impl
 {
-    /// <summary>
+	using System.Text;
+
+	/// <summary>
     /// Injection context that can be created on the fly
     /// </summary>
     public class InjectionContext : IInjectionContext
@@ -103,21 +105,28 @@ namespace Grace.DependencyInjection.Impl
             }
         }
 
+        public static StringBuilder Logs = new StringBuilder();
+
         /// <summary>
         /// Get data from context, returns null if not found
         /// </summary>
         /// <param name="key">key</param>
         /// <returns></returns>
-        public object GetExtraData(object key)
-        {
-            var stringKey = key as string;
-
-            if (stringKey != null)
+        public object GetExtraData(object key) {
+	        Logs.AppendLine("-----GetExtraData-----");
+			var stringKey = key as string;
+			Logs.AppendLine("Key = " + stringKey);
+			if (stringKey != null)
             {
-                return _extraDataProperties.GetValueOrDefault(stringKey) ??
-                       _extraDataValues.GetValueOrDefault(key);
+				Logs.AppendLine("-----END-----");
+				Logs.AppendLine("Is null :" + (_extraDataProperties.GetValueOrDefault(stringKey) != null).ToString());
+				Logs.AppendLine("Is null :" + (_extraDataValues.GetValueOrDefault(key) != null).ToString());
+
+				return _extraDataProperties.GetValueOrDefault(stringKey) ??
+				       _extraDataValues.GetValueOrDefault(key);
             }
 
+			Logs.AppendLine("-----END-----");
             return _extraDataValues.GetValueOrDefault(key);
         }
         
